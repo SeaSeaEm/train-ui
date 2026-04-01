@@ -69,11 +69,19 @@
   const APPS_URL = "https://script.google.com/macros/s/AKfycbxtrwaYPV9bKWM0rZakOZYUQfLChe-Rbz73pMTxnChxcTXGOL0RTrmhR8wTSqulUhZu3Q/exec";
   const INTERVALO_MS = 30000;
 
-  const campos = [
+  const camposSimples = [
     "arrows_count", "arrows_per_minute", "arrows_depletion_at",
-    "bow_index", "bow_imbue_remaining", "bow_imbue_expires_at",
-    "bot_status", "shutdown_at"
+    "bow_index", "bow_imbue_remaining",
   ];
+
+  const camposHora = ["shutdown_at", "bow_imbue_expires_at"];
+
+  function formatarHora(isoStr) {
+    if (!isoStr) return "—";
+    const d = new Date(isoStr);
+    if (isNaN(d)) return isoStr;
+    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  }
 
   async function buscarDados() {
     try {
@@ -81,14 +89,20 @@
       const data = await res.json();
       if (!data) return;
 
-      campos.forEach(campo => {
+      camposSimples.forEach(campo => {
         const el = document.getElementById(campo);
         if (el) el.textContent = data[campo] ?? "—";
+      });
+
+      camposHora.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.textContent = formatarHora(data[campo]);
       });
 
       const statusEl = document.getElementById("bot_status");
       if (statusEl) {
         statusEl.className = "card-value small";
+        statusEl.textContent = data.bot_status ?? "—";
         if (data.bot_status === "running") statusEl.classList.add("status-running");
         else statusEl.classList.add("status-stopped");
       }
