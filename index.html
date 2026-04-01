@@ -1,123 +1,129 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bot Monitor</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f1117; color: #e0e0e0; padding: 1.5rem; }
-    h1 { font-size: 16px; font-weight: 500; margin-bottom: 0.25rem; color: #fff; }
-    .updated { font-size: 12px; color: #555; margin-bottom: 1.25rem; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-    .card { background: #1a1d27; border-radius: 8px; padding: 1rem; border: 1px solid #2a2d3a; }
-    .card-label { font-size: 11px; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .card-value { font-size: 24px; font-weight: 500; color: #fff; }
-    .card-value.small { font-size: 16px; padding-top: 4px; }
-    .status-running  { color: #4ade80; }
-    .status-stopped  { color: #f87171; }
-    .divider { grid-column: 1 / -1; height: 1px; background: #2a2d3a; margin: 4px 0; }
-  </style>
-</head>
-<body>
+  <html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitor</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: system-ui, sans-serif; background: #0f1117; color: #e0e0e0; padding: 1.5rem; }
+      h1 { font-size: 16px; font-weight: 500; margin-bottom: 0.25rem; color: #fff; }
+      .updated { font-size: 12px; color: #555; margin-bottom: 1.25rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+      .card { background: #1a1d27; border-radius: 8px; padding: 1rem; border: 1px solid #2a2d3a; }
+      .card-label { font-size: 11px; color: #666; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+      .card-value { font-size: 24px; font-weight: 500; color: #fff; }
+      .card-value.small { font-size: 16px; padding-top: 4px; }
+      .status-running  { color: #4ade80; }
+      .status-stopped  { color: #f87171; }
+      .divider { grid-column: 1 / -1; height: 1px; background: #2a2d3a; margin: 4px 0; }
+    </style>
+  </head>
+  <body>
 
-<h1>Bot Monitor</h1>
-<div class="updated" id="ts">Carregando...</div>
+  <h1>Monitor</h1>
+  <div class="updated" id="ts">Carregando...</div>
 
-<div class="grid">
-  <div class="card">
-    <div class="card-label">Status</div>
-    <div class="card-value small" id="bot_status">—</div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Status</div>
+      <div class="card-value small" id="bot_status">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Shutdown às</div>
+      <div class="card-value small" id="shutdown_at">—</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card">
+      <div class="card-label">Flechas</div>
+      <div class="card-value" id="arrows_count">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Flechas / min</div>
+      <div class="card-value" id="arrows_per_minute">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Acabam às</div>
+      <div class="card-value small" id="arrows_depletion_at">—</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card">
+      <div class="card-label">Bow equipado</div>
+      <div class="card-value" id="bow_index">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Imbue restante</div>
+      <div class="card-value small" id="bow_imbue_remaining">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Imbue expira às</div>
+      <div class="card-value small" id="bow_imbue_expires_at">—</div>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-label">Shutdown às</div>
-    <div class="card-value small" id="shutdown_at">—</div>
-  </div>
 
-  <div class="divider"></div>
+  <script>
+    const APPS_URL = "https://script.google.com/macros/s/AKfycbxtrwaYPV9bKWM0rZakOZYUQfLChe-Rbz73pMTxnChxcTXGOL0RTrmhR8wTSqulUhZu3Q/exec";
+    const INTERVALO_MS = 30000;
 
-  <div class="card">
-    <div class="card-label">Flechas</div>
-    <div class="card-value" id="arrows_count">—</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Flechas / min</div>
-    <div class="card-value" id="arrows_per_minute">—</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Acabam às</div>
-    <div class="card-value small" id="arrows_depletion_at">—</div>
-  </div>
+    const camposSimples = [
+      "arrows_count", "arrows_per_minute",
+      "bow_index", "bow_imbue_remaining",
+    ];
 
-  <div class="divider"></div>
+    // campos que devem exibir dd/mm/aaaa - HH:MM
+    const camposData = ["shutdown_at", "bow_imbue_expires_at", "arrows_depletion_at"];
 
-  <div class="card">
-    <div class="card-label">Bow equipado</div>
-    <div class="card-value" id="bow_index">—</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Imbue restante</div>
-    <div class="card-value small" id="bow_imbue_remaining">—</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Imbue expira às</div>
-    <div class="card-value small" id="bow_imbue_expires_at">—</div>
-  </div>
-</div>
-
-<script>
-  const APPS_URL = "https://script.google.com/macros/s/AKfycbxtrwaYPV9bKWM0rZakOZYUQfLChe-Rbz73pMTxnChxcTXGOL0RTrmhR8wTSqulUhZu3Q/exec";
-  const INTERVALO_MS = 30000;
-
-  const camposSimples = [
-    "arrows_count", "arrows_per_minute", "arrows_depletion_at",
-    "bow_index", "bow_imbue_remaining",
-  ];
-
-  const camposHora = ["shutdown_at", "bow_imbue_expires_at"];
-
-  function formatarHora(isoStr) {
-    if (!isoStr) return "—";
-    const d = new Date(isoStr);
-    if (isNaN(d)) return isoStr;
-    return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  }
-
-  async function buscarDados() {
-    try {
-      const res = await fetch(APPS_URL + "?t=" + Date.now());
-      const data = await res.json();
-      if (!data) return;
-
-      camposSimples.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) el.textContent = data[campo] ?? "—";
-      });
-
-      camposHora.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) el.textContent = formatarHora(data[campo]);
-      });
-
-      const statusEl = document.getElementById("bot_status");
-      if (statusEl) {
-        statusEl.className = "card-value small";
-        statusEl.textContent = data.bot_status ?? "—";
-        if (data.bot_status === "running") statusEl.classList.add("status-running");
-        else statusEl.classList.add("status-stopped");
-      }
-
-      const ts = data.timestamp ? new Date(data.timestamp) : new Date();
-      document.getElementById("ts").textContent =
-        "Última leitura: " + ts.toLocaleString("pt-BR");
-    } catch (e) {
-      document.getElementById("ts").textContent = "Erro ao buscar dados";
+    function formatarData(val) {
+      if (!val || val === "—") return "—";
+      const d = new Date(val);
+      if (isNaN(d)) return val;  // já veio como string legível, exibe direto
+      const dd   = String(d.getDate()).padStart(2, "0");
+      const mm   = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const hh   = String(d.getHours()).padStart(2, "0");
+      const min  = String(d.getMinutes()).padStart(2, "0");
+      return `${dd}/${mm}/${yyyy} - ${hh}:${min}`;
     }
-  }
 
-  buscarDados();
-  setInterval(buscarDados, INTERVALO_MS);
-</script>
+    async function buscarDados() {
+      try {
+        const res = await fetch(APPS_URL + "?t=" + Date.now());
+        const data = await res.json();
+        if (!data) return;
 
-</body>
-</html>
+        camposSimples.forEach(campo => {
+          const el = document.getElementById(campo);
+          if (el) el.textContent = data[campo] ?? "—";
+        });
+
+        camposData.forEach(campo => {
+          const el = document.getElementById(campo);
+          if (el) el.textContent = formatarData(data[campo]);
+        });
+
+        const statusEl = document.getElementById("bot_status");
+        if (statusEl) {
+          statusEl.className = "card-value small";
+          statusEl.textContent = data.bot_status ?? "—";
+          if (data.bot_status === "running") statusEl.classList.add("status-running");
+          else statusEl.classList.add("status-stopped");
+        }
+
+        const ts = data.timestamp ? new Date(data.timestamp) : new Date();
+        document.getElementById("ts").textContent =
+          "Última leitura: " + ts.toLocaleString("pt-BR");
+      } catch (e) {
+        document.getElementById("ts").textContent = "Erro ao buscar dados";
+      }
+    }
+
+    buscarDados();
+    setInterval(buscarDados, INTERVALO_MS);
+  </script>
+
+  </body>
+  </html>
