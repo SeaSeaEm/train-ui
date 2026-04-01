@@ -77,7 +77,7 @@
 
   async function buscarDados() {
     try {
-      const res = await fetch(APPS_URL);
+      const res = await fetch(APPS_URL + "?t=" + Date.now());
       const data = await res.json();
       if (!data) return;
 
