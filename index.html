@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 1.5rem; }
+    h1 { font-size: 16px; font-weight: 500; margin-bottom: 1rem; color: #111; }
+    .updated { font-size: 12px; color: #888; margin-bottom: 1rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .card { background: #fff; border-radius: 8px; padding: 1rem; border: 1px solid #eee; }
+    .card-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .card-value { font-size: 28px; font-weight: 500; color: #111; }
+  </style>
+</head>
+<body>
+
+<h1>Monitor em tempo real</h1>
+<div class="updated" id="ts">Carregando...</div>
+
+<div class="grid">
+  <div class="card"><div class="card-label">Valor 1</div><div class="card-value" id="v1">—</div></div>
+  <div class="card"><div class="card-label">Valor 2</div><div class="card-value" id="v2">—</div></div>
+  <div class="card"><div class="card-label">Valor 3</div><div class="card-value" id="v3">—</div></div>
+  <div class="card"><div class="card-label">Valor 4</div><div class="card-value" id="v4">—</div></div>
+  <div class="card"><div class="card-label">Valor 5</div><div class="card-value" id="v5">—</div></div>
+  <div class="card"><div class="card-label">Valor 6</div><div class="card-value" id="v6">—</div></div>
+  <div class="card"><div class="card-label">Valor 7</div><div class="card-value" id="v7">—</div></div>
+  <div class="card"><div class="card-label">Valor 8</div><div class="card-value" id="v8">—</div></div>
+</div>
+
+<script>
+  const APPS_URL = "https://script.google.com/macros/s/SEU_ID/exec";
+  const INTERVALO_MS = 30000; // 30 segundos
+
+  async function buscarDados() {
+    try {
+      const res = await fetch(APPS_URL);
+      const data = await res.json();
+      if (!data) return;
+
+      for (let i = 1; i <= 8; i++) {
+        document.getElementById("v" + i).textContent = data["valor" + i] ?? "—";
+      }
+
+      const ts = data.timestamp ? new Date(data.timestamp) : new Date();
+      document.getElementById("ts").textContent =
+        "Última leitura: " + ts.toLocaleString("pt-BR");
+    } catch (e) {
+      document.getElementById("ts").textContent = "Erro ao buscar dados";
+    }
+  }
+
+  buscarDados();
+  setInterval(buscarDados, INTERVALO_MS);
+</script>
+
+</body>
+</html>
